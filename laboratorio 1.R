@@ -48,3 +48,20 @@ Rends <- xts(x = cbind(Datos[[1]]$adj_close_r, Datos[[2]]$adj_close_r, Datos[[3]
 names(Rends) <- tk
 #los resultados se ven como xts
 #datos[3 es donde se ponen la cantidad de columnas]
+Port1<-portfolio.spec(assets=tk)
+
+#Especifica restricciones del portafolio
+#En este caso especificaremos dos restricciones: RRestriccion 1: la suma de todos
+#los pesos debe ser cuando mucho 1 (100%)
+
+Port1<-add.constraint(portfolio=Port1,
+                      type="full_investment")
+
+#Restriccion 2: Limites superior e inferior para valores individuales de ponderación:
+
+Port1<-add.constraint(portfolio=Port1,type="box",min=c(.01,.01,.01), max=c(.7, .7, .7))
+
+Port1<-add.objective(portfolio=Port1,type="return",name="mean")
+
+Port1<-optimize.portfolio(R=Rends,portfolio=Port1,optimize_method ="random",
+                          trace=TRUE,search_size=50)
