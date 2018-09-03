@@ -2,7 +2,7 @@
 #install.packages('knitr', dependencies = TRUE)
 suppressMessages(library(plotly))#graficas iterativas
 suppressMessages(library(Quandl))#Descargar Precios
-suppressMessages(library(PortafolioAnalytics))#Teoria Moderna de portafolios
+suppressMessages(library(PortfolioAnalytics))#Teoria Moderna de portafolios
 suppressMessages(library(ROI))#Optimizacion de portafolio
 suppressMessages(library(kintr))#opciones de documentacion + codigo
 suppressMessages(library(kableExtra)) # Tablas en HTML
@@ -28,7 +28,7 @@ CS<-c("date","adj_close")
 
 #Fechas inicial y final
 fs<- c("2016-08-01","2018-08-01")
-
+Capital_Inicial<-10000
 #capital Inicial a considerar
 #Capital Inicial<- 100000
 #Comision
@@ -57,14 +57,15 @@ Port1<-portfolio.spec(assets=tk)
 Port1<-add.constraint(portfolio=Port1,
                       type="full_investment")
 
-#Restriccion 2: Limites superior e inferior para valores individuales de ponderación:
+#Restriccion 2: Limites superior e inferior para valores individuales de ponderaciÃ³n:
 
 Port1<-add.constraint(portfolio=Port1,type="box",min=c(.01,.01,.01), max=c(.7, .7, .7))
 
 Port1<-add.objective(portfolio=Port1,type="return",name="mean")
 
 Port1<-optimize.portfolio(R=Rends,portfolio=Port1,optimize_method ="random",
-                          trace=TRUE,search_size=50)
+                          trace=TRUE,search_size=500)#se gace con ese ejemplo
+
 #Port1$random_portfolio_objective_results
 Portafolios<-vector("list",
                     length=length(Port1$random_portfolio_objective_results))
@@ -78,3 +79,16 @@ for(i in 1:length(Port1$random_portfolio_objective_results)){
 df_Portafolios<-data.frame(matrix(nrow=length(Port1$random_portfolio_objective_results),ncol=3,data=0))
 
 colnames(df_Portafolios)<-c("Rend","Var","Clase")
+#si se quiere entrar a algo de una lista se debe de hacer doble corchete
+for(i in 1:length(Port1$random_portfolio_objective_results)){
+  df_Portafolios[i]<-round(Portafolios[[i]]$Medias*(252),4)
+  df_Portafolios[i]<-round(sqrt(Portafolios[[i]]$Vars)*sqrt(252),4)
+  df_Portafolios$Calse[i]<-"No-Frontera"
+  
+  for(k in 1:length(tk)){
+    df_Portafolios[i,paste("Peso_",tk[k],sep="")]<-Portafolios[[i]]$Pesos[k]
+    df_Portafolios[i,paste("Titulos_ini_",tk[k],sep="")]<-
+      (Capital_Inicial*Portafolios[[i]]$Pesos[k])%/%Datos[[k]]$adj_close[1]
+  }
+}
+#%/% modulo, que es division sin residuo
