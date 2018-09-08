@@ -39,6 +39,10 @@ for(i in 1:length(tk))
   Datos[[i]] <- Bajar_Precios(Columns=cs, Ticker=tk[i], Fecha_In=fs[1], Fecha_Fn=fs[2])
 
 names(Datos) <- tk
+#Ordenar datos de 1 a ultimo
+for(i in 1:length(tk)){
+  Datos[[i]]<-Datos[[i]][order(Datos[[i]][,1]), ]
+}
 
 for(i in 1:length(tk))
   Datos[[i]]$adj_close_r <- c(0, diff(log(Datos[[i]]$adj_close)))
