@@ -1,3 +1,7 @@
+# Remover todos los objetos del "Environment"
+rm(list = ls())
+# los 0s aceptados antes de expresas una cifra en notaci?n cient?fica
+options("scipen"=100, "digits"=4)
 ###Cargas librerias a utilizar
 #install.packages('knitr', dependencies = TRUE)
 suppressMessages(library(plotly))#graficas iterativas
@@ -6,13 +10,13 @@ suppressMessages(library(PortfolioAnalytics))#Teoria Moderna de portafolios
 suppressMessages(library(ROI))#Optimizacion de portafolio
 suppressMessages(library(knitr))#opciones de documentacion + codigo
 suppressMessages(library(kableExtra)) # Tablas en HTML
-options(kintr.table.format="html")
+options(knitr.table.format="html")
 
 #Cargar el token QUANDL
 Quandl.api_key("XrMP9jQysz1Z_6DdWgfi")
 
 #Funcion para bajar precios
-Bajar_Precos <-function(Columns,Tickers,Fecha_In,Fecha_Fn) {
+Bajar_Precios <-function(Columns,Tickers,Fecha_In,Fecha_Fn) {
   #Funcion para descargar N cantidad de activos desde QUANDL
   #--Dependencias:QUANDL
   #--Columns:columnas a incluir:c"date","adj_close")
