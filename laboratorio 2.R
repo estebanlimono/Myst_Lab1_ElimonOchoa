@@ -36,7 +36,7 @@ Bajar_Precios <- function(Columns, Tickers, Fecha_In, Fecha_Fn) {
 #                             colIndex=1,sartRow=10,endRow=73,
 #                             header=FALSE))
 #IAK<- read.xlsx("IAK.xlsx", sheet = 1)
-Datos_ETF<- read.xlsx("IAK.xlsx" , sheet=1)
+Datos_ETF<- read.xlsx("IWB.xlsx" , sheet=1)
 tk<- as.character(na.omit(Datos_ETF[which(Datos_ETF[,1]== "Ticker")+1:length(Datos_ETF[,1]),1]))
 cs<- c("date", "adj_close")
 
