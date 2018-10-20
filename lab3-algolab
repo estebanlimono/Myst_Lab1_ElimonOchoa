@@ -7,21 +7,25 @@ namespace QuantConnect
     *   We have explained some of these here, but the full base class can be found at:
     *   https://github.com/QuantConnect/Lean/tree/master/Algorithm
     */
+    //basic tutorial https://github.com/QuantConnect/Lean/blob/master/Algorithm.Python/BasicTemplateForexAlgorithm.py
     public class BasicTemplateAlgorithm : QCAlgorithm
     {
         public override void Initialize() 
         {
         	// backtest parameters
             SetStartDate(2012, 1, 1); //fecha inicio        
-            SetEndDate(DateTime.Now);//fecha final al dia de hoy
+            SetEndDate(DateTime.Today);//fecha final al dia de hoy
             
             // cash allocation
             SetCash(10000);//valor inicial del portafolio
             
             // request specific equities
             // including forex. Options and futures in beta.
-            //AddEquity("SPY", Resolution.Minute);//codigo para descargar 
+            //AddEquity("SPY", Resolution.Minute);//codigo para descargar indice o accion(usa)
             AddForex("USDMXN", Resolution.Hour);//codigo para agrgar divisa
+            //Resolution indica la ventana de tiempo:
+            //Hour, Minute
+            
         }
 
         /* 
@@ -31,12 +35,14 @@ namespace QuantConnect
         public override void OnData(Slice data) 
         {
         	// slice has lots of useful information
-        	TradeBars bars = data.Bars;
-        	Splits splits = data.Splits;
-        	Dividends dividends = data.Dividends;
+        	TradeBars bars = data.Bars;//obtain the data via Bars
+        	//los datos tambien se pueden conseguir via ticks
+        	Splits splits = data.Splits;//te da el split del precio del subyacente
+        	Dividends dividends = data.Dividends;//te regresa los dividendos del activo
+        	//en usdmxn no hay dividendos
         	
         	//Get just this bar.
-        	TradeBar bar;
+        	TradeBar bar;//se fija en las velas del historial
         	if (bars.ContainsKey("USDMXN")) bar = bars["USDMXN"];
         	
             if (!Portfolio.HoldStock) 
@@ -46,7 +52,8 @@ namespace QuantConnect
                 
                 // or request a fixed fraction of a specific asset. 
                 // +1 = 100% long. -2 = short all capital with 2x leverage.
-                SetHoldings("USDMXN", 1);
+                SetHoldings("USDMXN", 5);//apalancamiento=5
+                //vamos largos(-)=ir corto
                 
                 // debug message to your console. Time is the algorithm time.
                 // send longer messages to a file - these are capped to 10kb
