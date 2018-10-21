@@ -1,65 +1,62 @@
-namespace QuantConnect 
-{   
-    /*
-    *   Basic Template Algorithm
-    *
-    *   The underlying QCAlgorithm class has many methods which enable you to use QuantConnect.
-    *   We have explained some of these here, but the full base class can be found at:
-    *   https://github.com/QuantConnect/Lean/tree/master/Algorithm
-    */
-    //basic tutorial https://github.com/QuantConnect/Lean/blob/master/Algorithm.Python/BasicTemplateForexAlgorithm.py
-    public class BasicTemplateAlgorithm : QCAlgorithm
-    {
-        public override void Initialize() 
-        {
-        	// backtest parameters
-            SetStartDate(2012, 1, 1); //fecha inicio        
-            SetEndDate(DateTime.Today);//fecha final al dia de hoy
-            
-            // cash allocation
-            SetCash(10000);//valor inicial del portafolio
-            
-            // request specific equities
-            // including forex. Options and futures in beta.
-            //AddEquity("SPY", Resolution.Minute);//codigo para descargar indice o accion(usa)
-            AddForex("USDMXN", Resolution.Hour);//codigo para agrgar divisa
-            //Resolution indica la ventana de tiempo:
-            //Hour, Minute
-            
-        }
+from Risk.NullRiskManagementModel import NullRiskManagementModel
+from clr import AddReference
+AddReference("System")
+AddReference("QuantConnect.Algorithm")
+AddReference("QuantConnect.Indicators")
+AddReference("QuantConnect.Common")
 
-        /* 
-        *	New data arrives here.
-        *	The "Slice" data represents a slice of time, it has all the data you need for a moment.	
-        */ 
-        public override void OnData(Slice data) 
-        {
-        	// slice has lots of useful information
-        	TradeBars bars = data.Bars;//obtain the data via Bars
-        	//los datos tambien se pueden conseguir via ticks
-        	Splits splits = data.Splits;//te da el split del precio del subyacente
-        	Dividends dividends = data.Dividends;//te regresa los dividendos del activo
-        	//en usdmxn no hay dividendos
-        	
-        	//Get just this bar.
-        	TradeBar bar;//se fija en las velas del historial
-        	if (bars.ContainsKey("USDMXN")) bar = bars["USDMXN"];
-        	
-            if (!Portfolio.HoldStock) 
-            {
-                // place an order, positive is long, negative is short.
-                // Order("SPY",  quantity);
-                
-                // or request a fixed fraction of a specific asset. 
-                // +1 = 100% long. -2 = short all capital with 2x leverage.
-                SetHoldings("USDMXN", 5);//apalancamiento=5
-                //vamos largos(-)=ir corto
-                
-                // debug message to your console. Time is the algorithm time.
-                // send longer messages to a file - these are capped to 10kb
-                Debug("Purchased USDMXN on " + Time.ToShortDateString());
-                //Log("This is a longer message send to log.");
-            }
-        }
-    }
-}
+from System import *
+from QuantConnect import *
+from QuantConnect.Algorithm import *
+from QuantConnect.Indicators import *
+from datetime import datetime
+
+#for more data review:
+#https://www.quantconnect.com/research/notebook/16213/MyResearch.ipynb
+#usamos la paqueteria de señales MACD
+class MACDTrendAlgorithm(QCAlgorithm):
+
+    def Initialize(self):
+        '''Initialise the data and resolution required, as well as the cash and start-end dates for your algorithm. All algorithms must initialized.'''
+        self.ticker='AAPL'#add the ticker, just stocks
+        #we can also trade fx or cryptos, but we need to chang add equity
+        self.SetStartDate(2012, 1, 1)    #Set Start Date
+        self.SetEndDate(DateTime.Today)      #Set End Date
+        self.SetCash(100000)             #Set Strategy Cash
+        # Find more symbols here: http://quantconnect.com/data
+        self.AddEquity(self.ticker, Resolution.Hour)#daily,hour, minute, tick
+
+        # define our daily macd(12,26) with a 9 hour signal
+        # how to trade macd https://www.investopedia.com/terms/m/macd.asp
+        self.__macd = self.MACD(self.ticker, 12, 26, 9, MovingAverageType.Exponential, Resolution.Hour)
+        self.__previous = datetime.min
+        self.PlotIndicator("MACD", True, self.__macd, self.__macd.Signal)
+        self.PlotIndicator(self.ticker, self.__macd.Fast, self.__macd.Slow)
+
+
+    def OnData(self, data):
+        '''OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.'''
+        # wait for our macd to fully initialize
+        if not self.__macd.IsReady: return#se inicializa el macd
+
+        # only once per hour
+        if self.__previous.date() == self.Time.date(): return#compara precio anterior con actual
+
+        # define a small tolerance on our checks to avoid bouncing
+        tolerance = 0.0025#tolerancia de reobote
+
+        holdings = self.Portfolio[self.ticker].Quantity#Ccantidad de titulos
+
+        signalDeltaPercent = (self.__macd.Current.Value - self.__macd.Signal.Current.Value)/self.__macd.Fast.Current.Value
+#se presenta la señal de cambio
+        # if our macd is greater than our signal, then let's go long
+        #señal para comprar si se tiene <= que cero titulos
+        if holdings <= 0 and signalDeltaPercent > tolerance:  # 0.1%
+            # longterm says buy as well
+            self.SetHoldings(self.ticker, 1.0)
+
+        # of our macd is less than our signal, then let's go short
+        elif holdings >= 0 and signalDeltaPercent < -tolerance:
+            self.Liquidate(self.ticker)#Se venden los titulos que teniamos
+
+        self.__previous = self.Time
